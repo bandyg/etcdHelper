@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const { Etcd3 } = require("etcd3");
 const { LRUCache } = require("lru-cache");
@@ -8,23 +9,32 @@ app.use(express.json());
 
 // Cache Configuration
 const cache = new LRUCache({
-  max: 500, // Maximum number of items
-  ttl: 1000 * 60, // 1 minute TTL
+  max: parseInt(process.env.CACHE_MAX_ITEMS) || 500, // Maximum number of items
+  ttl: parseInt(process.env.CACHE_TTL_MS) || 1000 * 60, // 1 minute TTL
 });
 
 // Configuration
-const etcdHosts = process.env.ETCD_HOSTS
-  ? process.env.ETCD_HOSTS.split(",")
-  : [
-      "http://100.101.75.66:2379",
-      "http://100.111.100.103:2379",
-      "http://100.123.53.56:2379",
-    ];
+let etcdHosts = [];
+
+if (process.env.ETCD_HOSTS) {
+  etcdHosts = process.env.ETCD_HOSTS.split(",");
+} else if (process.env.ETCD_HOST) {
+  const host = process.env.ETCD_HOST;
+  const port = process.env.ETCD_PORT || 2379;
+  etcdHosts = [`http://${host}:${port}`];
+} else {
+  console.warn("⚠️ ETCD configuration missing. Using default http://localhost:2379");
+  etcdHosts = ["http://localhost:2379"];
+}
 
 const etcdAuth = {
-  username: process.env.ETCD_USERNAME || "",
-  password: process.env.ETCD_PASSWORD || "",
+  username: process.env.ETCD_USERNAME,
+  password: process.env.ETCD_PASSWORD,
 };
+
+// Filter out undefined auth
+if (!etcdAuth.username) delete etcdAuth.username;
+if (!etcdAuth.password) delete etcdAuth.password;
 
 const grpcOptions = {};
 if (process.env.ETCD_CA_CERT) {
@@ -137,6 +147,8 @@ app.get("/kv", ensureEtcd, async (req, res) => {
   }
 });
 
-app.listen(5001, () => {
-  console.log("✅ etcd API server running on http://localhost:5001");
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, () => {
+  console.log(`✅ etcd API server running on http://localhost:${PORT}`);
+  console.log(`🔗 Connected to etcd servers: ${etcdHosts.join(", ")}`);
 });
