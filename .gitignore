@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+
+# IDE Configs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Performance Test Artifacts
+tests/performance/reports/
+tests/performance/__pycache__/
+tests/performance/*.log
+tests/performance/*.csv
+tests/performance/*.html
+tests/performance/*.txt
+
+# Python (since we have python scripts in tests)
+__pycache__/
+*.py[cod]
+*$py.class
