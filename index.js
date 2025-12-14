@@ -122,6 +122,33 @@ app.post("/kv", ensureEtcd, async (req, res) => {
   }
 });
 
+// 🔹 清空所有 key (需要 secret)
+app.delete("/kv", ensureEtcd, async (req, res) => {
+  const { secret } = req.query; // Supports query param
+  const bodySecret = req.body && req.body.secret; // or body
+  const providedSecret = secret || bodySecret;
+
+  const adminSecret = process.env.ADMIN_SECRET;
+
+  if (!adminSecret) {
+    return res.status(500).json({ error: "Server misconfiguration: ADMIN_SECRET not set" });
+  }
+
+  if (providedSecret !== adminSecret) {
+    return res.status(403).json({ error: "Invalid secret" });
+  }
+
+  try {
+    await etcd.delete().all();
+    // Clear entire cache
+    cache.clear();
+    res.json({ success: true, message: "All keys deleted" });
+  } catch (err) {
+    console.error("Error clearing keys:", err);
+    res.status(503).json({ error: "Etcd service unavailable or error", details: err.message });
+  }
+});
+
 // 🔹 删除 key
 app.delete("/kv/:key", ensureEtcd, async (req, res) => {
   try {
